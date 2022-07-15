@@ -43,8 +43,8 @@ func StrError(status int) error {
 		msg = "client zombie"
 	case C.EEXIST:
 		msg = "the connection is already made"
-	case C.ENODATA:
-		msg = "the buffer is empty"
+//	case C.ENODATA:
+//		msg = "the buffer is empty"
 	case C.ENOBUFS:
 		msg = "there is not enough space in the buffer for the event"
 	default:
