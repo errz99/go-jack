@@ -3,6 +3,7 @@ package jack
 /*
 #cgo linux LDFLAGS: -ljack
 #cgo darwin LDFLAGS: -ljack
+#cgo freebsd LDFLAGS: -ljack
 #cgo windows,386 LDFLAGS: -llibjack
 #cgo windows,amd64 LDFLAGS: -llibjack64
 
