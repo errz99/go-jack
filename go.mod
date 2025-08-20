@@ -1,3 +1,3 @@
-module github.com/xthexder/go-jack
+module github.com/errz99/go-jack
 
 go 1.19
