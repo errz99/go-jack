@@ -5,7 +5,8 @@ package jack
 #cgo darwin LDFLAGS: -ljack
 #cgo freebsd LDFLAGS: -ljack
 #cgo windows,386 LDFLAGS: -llibjack
-#cgo windows,amd64 LDFLAGS: -llibjack64
+#cgo windows,amd64 LDFLAGS: -llibjack64 -L "C:/Program Files/JACK2/lib"
+#cgo windows,amd64 CFLAGS: -I "C:/Program Files/JACK2/include"
 
 #include <stdlib.h>
 #include <jack/jack.h>
@@ -14,6 +15,7 @@ package jack
 extern int goProcess(unsigned int, void *);
 extern int goBufferSize(unsigned int, void *);
 extern int goSampleRate(unsigned int, void *);
+extern int goXRun(void *);
 extern void goPortRegistration(jack_port_id_t, int, void *);
 extern void goPortRename(jack_port_id_t, const char *, const char *, void *);
 extern void goPortConnect(jack_port_id_t, jack_port_id_t, int, void *);
@@ -35,6 +37,10 @@ int jack_set_buffer_size_callback_go(jack_client_t * client) {
 
 int jack_set_sample_rate_callback_go(jack_client_t * client) {
 	return jack_set_sample_rate_callback(client, goSampleRate, client);
+}
+
+int jack_set_xrun_callback_go(jack_client_t * client) {
+	return jack_set_xrun_callback(client, goXRun, client);
 }
 
 int jack_set_port_registration_callback_go(jack_client_t * client) {
@@ -62,8 +68,10 @@ void jack_set_info_function_go() {
 }
 */
 import "C"
-import "unsafe"
-import "sync"
+import (
+	"sync"
+	"unsafe"
+)
 
 const (
 	// JackOptions
@@ -106,6 +114,7 @@ type Client struct {
 	processCallback          ProcessCallback
 	bufferSizeCallback       BufferSizeCallback
 	sampleRateCallback       SampleRateCallback
+	xRunCallback             XRunCallback
 	portRegistrationCallback PortRegistrationCallback
 	portRenameCallback       PortRenameCallback
 	portConnectCallback      PortConnectCallback
@@ -159,6 +168,10 @@ func (client *Client) Activate() int {
 	return int(C.jack_activate(client.handler))
 }
 
+func (client *Client) CPULoad() float32 {
+	return float32(C.jack_cpu_load(client.handler))
+}
+
 func (client *Client) GetName() string {
 	return C.GoString(C.jack_get_client_name(client.handler))
 }
@@ -167,8 +180,24 @@ func (client *Client) IsRealtime() bool {
 	return C.jack_is_realtime(client.handler) != 0
 }
 
+func (client *Client) GetFramesSinceCycleStart() uint32 {
+	return uint32(C.jack_frames_since_cycle_start(client.handler))
+}
+
+func (client *Client) GetFrameTime() uint32 {
+	return uint32(C.jack_frame_time(client.handler))
+}
+
+func (client *Client) GetLastFrameTime() uint32 {
+	return uint32(C.jack_last_frame_time(client.handler))
+}
+
 func (client *Client) GetBufferSize() uint32 {
 	return uint32(C.jack_get_buffer_size(client.handler))
+}
+
+func (client *Client) SetBufferSize(size uint32) int {
+	return int(C.jack_set_buffer_size(client.handler, C.uint32_t(size)))
 }
 
 func (client *Client) GetSampleRate() uint32 {
@@ -188,6 +217,11 @@ func (client *Client) SetBufferSizeCallback(callback BufferSizeCallback) int {
 func (client *Client) SetSampleRateCallback(callback SampleRateCallback) int {
 	client.sampleRateCallback = callback
 	return int(C.jack_set_sample_rate_callback_go(client.handler))
+}
+
+func (client *Client) SetXRunCallback(callback XRunCallback) int {
+	client.xRunCallback = callback
+	return int(C.jack_set_xrun_callback_go(client.handler))
 }
 
 func (client *Client) SetPortRegistrationCallback(callback PortRegistrationCallback) int {
